@@ -1,0 +1,12 @@
+.env
+__pycache__/
+*.pyc
+*.db
+backend/data/
+backend/test_data/
+.pytest_cache/
+.venv/
+backend/certs/*
+frontend/certs/*
+!backend/certs/.gitkeep
+!frontend/certs/.gitkeep
