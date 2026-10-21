@@ -1,0 +1,157 @@
+rules:
+  - id: js-eval
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: eval()/new Function() executes arbitrary code.
+    metadata: {title: "Use of eval / Function constructor", suggestion: "Use JSON.parse or an explicit dispatch map.", owasp: "A03 Injection", category: security}
+    pattern-either:
+      - pattern: eval($X)
+      - pattern: new Function(...)
+  - id: js-child-process-exec
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: Shell command built from a non-literal value; command injection risk.
+    metadata: {title: "child_process.exec with dynamic input", suggestion: "Use execFile/spawn with an argument array.", owasp: "A03 Injection", category: security}
+    patterns:
+      - pattern-either:
+          - pattern: require('child_process').exec($CMD, ...)
+          - pattern: child_process.exec($CMD, ...)
+          - pattern: exec($CMD, ...)
+          - pattern: execSync($CMD, ...)
+      - pattern-not: exec("...", ...)
+      - pattern-not: execSync("...", ...)
+      - pattern-not: $O.exec("...", ...)
+      - pattern-not: $O.execSync("...", ...)
+  - id: js-sql-concat
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: SQL text assembled from variables; SQL injection risk.
+    metadata: {title: "SQL built from dynamic string", suggestion: "Use parameter placeholders (e.g. db.query(sql, [params])).", owasp: "A03 Injection", category: security}
+    pattern-either:
+      - pattern: $DB.query(`...${$X}...`, ...)
+      - pattern: $DB.query("..." + $X, ...)
+      - pattern: $DB.execute(`...${$X}...`, ...)
+      - pattern: $DB.execute("..." + $X, ...)
+  - id: js-innerhtml
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Untrusted data written as HTML enables XSS.
+    metadata: {title: "Unescaped HTML sink", suggestion: "Render as text or sanitize with DOMPurify.", owasp: "A03 Injection", category: security}
+    pattern-either:
+      - pattern: $EL.innerHTML = $X
+      - pattern: $EL.outerHTML = $X
+      - pattern: document.write($X)
+  - id: js-weak-hash
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: MD5/SHA-1 are not collision resistant.
+    metadata: {title: "Weak hash algorithm", suggestion: "Use sha256 (and bcrypt/argon2 for passwords).", owasp: "A02 Cryptographic Failures", category: security}
+    pattern-either:
+      - pattern: crypto.createHash("md5")
+      - pattern: crypto.createHash("sha1")
+  - id: js-tls-disabled
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: TLS certificate verification disabled.
+    metadata: {title: "TLS verification disabled", suggestion: "Keep rejectUnauthorized true; add the CA instead.", owasp: "A02 Cryptographic Failures", category: security}
+    pattern-either:
+      - pattern: "{..., rejectUnauthorized: false, ...}"
+      - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+  - id: js-jwt-none
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: JWT verification accepts the 'none' algorithm or skips verification.
+    metadata: {title: "Insecure JWT verification", suggestion: "Pin algorithms: jwt.verify(token, key, {algorithms: ['HS256']}).", owasp: "A07 Identification and Authentication Failures", category: security}
+    pattern-either:
+      - pattern: jwt.decode($T)
+      - pattern: "jwt.verify($T, $K, {..., algorithms: [..., 'none', ...], ...})"
+  - id: js-empty-catch
+    languages: [javascript, typescript]
+    severity: INFO
+    message: Errors are silently swallowed.
+    metadata: {title: "Exception swallowed", suggestion: "Log or handle the error explicitly.", owasp: "Error handling", category: bug}
+    pattern: try { ... } catch ($E) {}
+
+  - id: go-tls-insecure
+    languages: [go]
+    severity: ERROR
+    message: InsecureSkipVerify disables TLS certificate checks.
+    metadata: {title: "TLS verification disabled", suggestion: "Remove InsecureSkipVerify; configure RootCAs.", owasp: "A02 Cryptographic Failures", category: security}
+    pattern: "tls.Config{..., InsecureSkipVerify: true, ...}"
+  - id: go-sql-sprintf
+    languages: [go]
+    severity: ERROR
+    message: SQL text assembled with fmt.Sprintf; SQL injection risk.
+    metadata: {title: "SQL built from dynamic string", suggestion: "Use db.Query(sql, args...) placeholders.", owasp: "A03 Injection", category: security}
+    pattern-either:
+      - pattern: $DB.Query(fmt.Sprintf(...), ...)
+      - pattern: $DB.Exec(fmt.Sprintf(...), ...)
+      - pattern: $DB.QueryRow(fmt.Sprintf(...), ...)
+  - id: go-exec-shell
+    languages: [go]
+    severity: ERROR
+    message: Command executed through a shell with dynamic input.
+    metadata: {title: "Shell command with dynamic input", suggestion: "Call exec.Command(binary, args...) without sh -c.", owasp: "A03 Injection", category: security}
+    pattern: exec.Command("sh", "-c", $X)
+  - id: go-weak-hash
+    languages: [go]
+    severity: WARNING
+    message: MD5/SHA-1 are not collision resistant.
+    metadata: {title: "Weak hash algorithm", suggestion: "Use crypto/sha256.", owasp: "A02 Cryptographic Failures", category: security}
+    pattern-either:
+      - pattern: md5.New()
+      - pattern: sha1.New()
+      - pattern: md5.Sum(...)
+      - pattern: sha1.Sum(...)
+
+  - id: java-runtime-exec
+    languages: [java]
+    severity: ERROR
+    message: Runtime.exec with a dynamic command string.
+    metadata: {title: "Shell command with dynamic input", suggestion: "Use ProcessBuilder with an argument list.", owasp: "A03 Injection", category: security}
+    patterns:
+      - pattern: Runtime.getRuntime().exec($X)
+      - pattern-not: Runtime.getRuntime().exec("...")
+  - id: java-sql-concat
+    languages: [java]
+    severity: ERROR
+    message: SQL text assembled by string concatenation.
+    metadata: {title: "SQL built from dynamic string", suggestion: "Use PreparedStatement with ? placeholders.", owasp: "A03 Injection", category: security}
+    pattern-either:
+      - pattern: $ST.executeQuery("..." + $X)
+      - pattern: $ST.executeUpdate("..." + $X)
+      - pattern: $ST.execute("..." + $X)
+  - id: java-weak-hash
+    languages: [java]
+    severity: WARNING
+    message: MD5/SHA-1 are not collision resistant.
+    metadata: {title: "Weak hash algorithm", suggestion: "Use SHA-256.", owasp: "A02 Cryptographic Failures", category: security}
+    pattern-either:
+      - pattern: MessageDigest.getInstance("MD5")
+      - pattern: MessageDigest.getInstance("SHA-1")
+  - id: java-deserialization
+    languages: [java]
+    severity: ERROR
+    message: Java native deserialization of untrusted data can execute code.
+    metadata: {title: "Unsafe deserialization", suggestion: "Use a schema-validated format (JSON) or an ObjectInputFilter.", owasp: "A08 Software and Data Integrity Failures", category: security}
+    pattern: (ObjectInputStream $O).readObject()
+
+  - id: php-eval-exec
+    languages: [php]
+    severity: ERROR
+    message: Dynamic code or shell execution.
+    metadata: {title: "Code/command execution with dynamic input", suggestion: "Avoid eval/system; use escapeshellarg and allowlists.", owasp: "A03 Injection", category: security}
+    pattern-either:
+      - pattern: eval($X)
+      - pattern: system($X)
+      - pattern: shell_exec($X)
+      - pattern: unserialize($X)
+  - id: ruby-eval-system
+    languages: [ruby]
+    severity: ERROR
+    message: Dynamic code or shell execution.
+    metadata: {title: "Code/command execution with dynamic input", suggestion: "Use system with separate arguments; avoid eval.", owasp: "A03 Injection", category: security}
+    pattern-either:
+      - pattern: eval($X)
+      - pattern: system("..." + $X)
+      - pattern: Marshal.load($X)
