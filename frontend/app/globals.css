@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { @apply bg-ink-950 font-sans text-ink-200 antialiased; }
+
+.pin { width: 10px !important; height: 10px !important; margin: 5px 0 0 5px; border-radius: 2px; cursor: pointer; }
+.pin-critical { background: #ef4444; } .pin-high { background: #f97316; } .pin-medium { background: #eab308; }
+.pin-low { background: #38bdf8; } .pin-info { background: #95a09a; }
+.hl-critical { background: rgba(239,68,68,.16); } .hl-high { background: rgba(249,115,22,.14); }
+.hl-medium { background: rgba(234,179,8,.12); } .hl-low { background: rgba(56,189,248,.10); } .hl-info { background: rgba(149,160,154,.08); }
+.hl-focus { outline: 1px solid #74c965; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
